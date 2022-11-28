@@ -42,7 +42,7 @@ using namespace std;
 
 //
 //3 inches at 30 degree
-//const string folder = "20220724AmBe_HV1550_Trich0_3in150cm_Deg30_Ch4_2in2cm_Ch6_2in10cm_24hours";
+const string folder = "20220724AmBe_HV1550_Trich0_3in150cm_Deg30_Ch4_2in2cm_Ch6_2in10cm_24hours";
 //const string folder = "20220727AmBe_HV1550_Trich0_3in150cm_Deg30_Ch4_2in2cm_Ch6_2in10cm_24hours";
 //const string folder = "20220725AmBe_HV1550_Trich0_3in150cm_Deg30_Ch4_2in2cm_Ch6_2in10cm_24hours";
 //const string folder = "20220729AmBe_HV1550_Trich0_3in150cm_Deg30_Ch4_2in2cm_Ch6_2in10cm_24hours";
@@ -66,7 +66,7 @@ using namespace std;
 //const string folder = "20220917AmBe_HV1550_Trich0_3in150cm_Deg30_Ch4_2in2cm_Ch6_2in10cm_24hours";
 //const string folder = "20220918AmBe_HV1550_Trich0_3in150cm_Deg30_Ch4_2in2cm_Ch6_2in10cm_24hours";
 //const string folder = "20220920AmBe_HV1550_Trich0_3in150cm_Deg30_Ch4_2in2cm_Ch6_2in10cm_24hours";
-const string folder = "20220924AmBe_HV1550_Trich0_3in150cm_Deg30_Ch4_2in2cm_Ch6_2in10cm_24hours";
+//const string folder = "20220924AmBe_HV1550_Trich0_3in150cm_Deg30_Ch4_2in2cm_Ch6_2in10cm_24hours";
 
 //Xconst string folder = "20220831AmBe_HV1550_Trich0_3in150cm_Deg30_Ch4_2in2cm_Ch6_2in10cm_24hours";
 //Xconst string folder = "20220904AmBe_HV1550_Trich0_3in150cm_Deg30_Ch4_2in2cm_Ch6_2in10cm_24hours";
@@ -77,7 +77,7 @@ const string ATriggerFileName = "data/"+ folder + "/UNFILTERED/Data_CH4@DT5730B_
 const string BTriggerFileName = "data/"+ folder + "/UNFILTERED/Data_CH6@DT5730B_1173_" + folder + ".bin";
 
 
-string OutROIFileName =  "processed_TOF_data/Tri_ch0_3in_30deg_d150cm_Ch4_2in_2cm_Ver4/" + folder + ".txt"; 
+string OutROIFileName =  "processed_TOF_data/Tri_ch0_3in_30deg_d150cm_Ch4_2in_2cm_Ver4/" + folder + "_test3.txt"; 
 //string OutROIFileName =  "processed_TOF_data/Tri_ch0_2in_d20mm_Ch6_3in_150cm_Ch4_2in_118cm/" + folder + ".txt"; 
 //string OutROIFileName =  "processed_TOF_data/Tri_ch0_3in_30deg_d150cm_Ch4_2in_2cm/" + folder + ".txt"; 
 
@@ -543,13 +543,7 @@ void ROIreadBinaryWave(int64_t start_pos, int64_t end_pos, int nThread){
 			fROIIn.read((char*)&sample, sizeof(int16_t));
 			fROIcurrentWave.push_back(sample);
 		}
-		
-		
 
-		
-		
-		//double fROIPSP;
-		
 		if (fROIenergy == 0) fROIPSP = 0;
 
 		else { fROIPSP = (fROIenergy - fROIshortEnergy) / ((double)fROIenergy *1.0); }
@@ -593,6 +587,7 @@ void ROIreadBinaryWave(int64_t start_pos, int64_t end_pos, int nThread){
 		neutron_count++;
 		ATrigreadBinaryWave();
 		
+
 		//}
 		/*
 		if (fROIPSP> 0.35 && fROIPSP<0.4){
@@ -801,31 +796,41 @@ void ATrigreadBinaryWave(){
 			*/
 		// if ((fATrigPSP > (g1d[fATrigenergy-1]/1000)) && (fATrigPSP < (g1u[fATrigenergy-1]/1000)) )  {
 		
-		if ((fATrigPSP > 0.3) && (fATrigPSP < 0.5))  {
+		if ((fATrigPSP > 0.26) && (fATrigPSP < 0.5))  {
 
 			if ((TIMEDIV<=320)&&(TIMEDIV>=-320)){
 				AAneutron = true;
 				BTrigreadBinaryWave();
 				fATrigNumofRead++;
-				break;
 
+				break;
 				}
 
 			if (TIMEDIV<-320){
 				BTrigreadBinaryWave();
+				//fATrigNumofRead++;
 				break;
 				}
+
 			if (TIMEDIV>320){
 				//BTrigreadBinaryWave();
 				fATrigNumofRead++;
+
 				}
 			else {
-				//cout << "WRONG AGAIN"<< endl;
+				cout << "WRONG"<< endl;
+				fgetc(stdin);
 				BTrigreadBinaryWave();
 				fATrigNumofRead++;
 				//break;
 			}
-			}
+		}
+		
+		else{
+			//BTrigreadBinaryWave();
+			fATrigNumofRead++;
+			//break;
+		}
 		//cout << "Check potint 5"<< endl;
 		//fgetc(stdin); //pause sign
 		/*
@@ -1031,10 +1036,15 @@ void BTrigreadBinaryWave(){
 			else {
 				fBTrigNumofRead++;
 				WriteTo290File();
-				break;
+				//break;
 			}
 		}
-
+		else{
+			//BTrigreadBinaryWave();
+			fBTrigNumofRead++;
+			//break;
+		}
+		
 		/*
 		if (TIMEDIV<-400){
 			WriteTo290File();
