@@ -77,21 +77,21 @@ const string ATriggerFileName = "data/"+ folder + "/UNFILTERED/Data_CH4@DT5730B_
 const string BTriggerFileName = "data/"+ folder + "/UNFILTERED/Data_CH6@DT5730B_1173_" + folder + ".bin";
 
 
-string OutROIFileName =  "processed_TOF_data/Tri_ch0_3in_30deg_d150cm_Ch4_2in_2cm_Ver4/" + folder + "_test3.txt"; 
+string OutROIFileName =  "processed_TOF_data/Tri_ch0_3in_30deg_d150cm_Ch4_2in_2cm_Ver4/" + folder + "test_5.txt"; 
 //string OutROIFileName =  "processed_TOF_data/Tri_ch0_2in_d20mm_Ch6_3in_150cm_Ch4_2in_118cm/" + folder + ".txt"; 
 //string OutROIFileName =  "processed_TOF_data/Tri_ch0_3in_30deg_d150cm_Ch4_2in_2cm/" + folder + ".txt"; 
 
 const int Recordlength = 992;
 const int bits = 192;
-const int numberOfBytesOfEvent = 312;       // bits devided by 8 (8bits/byte)
-
+//const int numberOfBytesOfEvent = 312;       // bits devided by 8 (8bits/byte)
+const int TrignumberOfBytesOfEvent = 192/8;   // 192 bits devided by 8 (8bits/byte)
 int64_t neutron_count =0 ;
 
 
 //Variable
 
-int64_t fATrigNumofRead;
-int64_t fBTrigNumofRead;
+int64_t fATrigNumofRead=0;
+int64_t fBTrigNumofRead=0;
 int64_t main_detector_signal_counter;
 int64_t A_detector_signal_counter;
 int64_t B_detector_signal_counter;
@@ -201,6 +201,10 @@ void ROOTwriteToFile();
 int64_t numberOfEvent;
 
 double fROIPSP;
+int64_t globalA;
+int64_t localA;
+
+int64_t positionA;
 
 int main(int argc, char** argv){
 	
@@ -503,16 +507,16 @@ void ROIcloseFile(){
 }
 
 void ROIreadBinaryWave(int64_t start_pos, int64_t end_pos, int nThread){
-	
 
-	
+
+	globalA =0;
 	fROIIn.open(MainFileName.c_str(), ios::binary | ios::in);
 	fROIIn.seekg(start_pos, ios::beg);
 	fATrigIn.open(ATriggerFileName.c_str(), ios::binary | ios::in);
 	fBTrigIn.open(BTriggerFileName.c_str(), ios::binary | ios::in);
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
 	//fROIcurrentWave.clear();
-
+	ATrigreadBinaryWave();
 	while (1){
 		
 		//Aneutron = false;
@@ -550,7 +554,7 @@ void ROIreadBinaryWave(int64_t start_pos, int64_t end_pos, int nThread){
 
 
 		// display term 
-/*	
+/*
 		cout << "__________________mainEJ290______________" << endl;
 		cout << "This is for the first event of the file" << endl;
 		cout << "board: " << fROIboard << endl;
@@ -586,8 +590,11 @@ void ROIreadBinaryWave(int64_t start_pos, int64_t end_pos, int nThread){
 		//if (( fROIPSP > 0.3 ) && ( fROIPSP < 0.5 )){
 		neutron_count++;
 		ATrigreadBinaryWave();
-		
-
+		/*
+		if ((main_detector_signal_counter>50000)&&(main_detector_signal_counter<60000)){
+			WriteTo309File();
+		}
+		*/
 		//}
 		/*
 		if (fROIPSP> 0.35 && fROIPSP<0.4){
@@ -614,7 +621,7 @@ void ROIreadBinaryWave(int64_t start_pos, int64_t end_pos, int nThread){
 		main_detector_signal_counter++;
 		if (main_detector_signal_counter % 10000 == 0){
 			cout << "Event: "<<main_detector_signal_counter << endl<<endl;;
-		
+			cout << "fATrigNumofRead: "<< fATrigNumofRead<< "fBTrigNumofRead: "<< fBTrigNumofRead<<endl;
 		}
 		/*
 		if (neutron_count % 10000 == 0){
@@ -700,25 +707,28 @@ void ATrigcloseFile(){
 
 void ATrigreadBinaryWave(){
 
+
 	//fATrigcurrentWave.clear();
-	int64_t positionA = numberOfBytesOfEvent* fATrigNumofRead;
+	positionA = TrignumberOfBytesOfEvent* fATrigNumofRead;
+	//positionA = TrignumberOfBytesOfEvent* 1;
+
 	fATrigIn.seekg(positionA, ios::beg);
 
 	while (1){
-		
+
 		//Aneutron = false;
 		//AEn = -1;
 		Aneutron = false;
 		AAneutron = false;
 		fATrigcurrentWave.clear();
-		fATrigIn.read((char*)&fATrigboard, sizeof(int16_t));
-		fATrigIn.read((char*)&fATrigchannel, sizeof(int16_t));
-		fATrigIn.read((char*)&fATrigtimestamp, sizeof(int64_t)); //pico seconds
-		fATrigIn.read((char*)&fATrigenergy, sizeof(int16_t));
-		fATrigIn.read((char*)&fATrigshortEnergy, sizeof(int16_t));
-		fATrigIn.read((char*)&fATrigflags, sizeof(int32_t));
-		fATrigIn.read((char*)&fATrignumOfWaveSamplesToBeRead, sizeof(int16_t));
-		fATrigIn.read((char*)&Asample, sizeof(int16_t));
+		fATrigIn.read((char*)&fATrigboard, sizeof(int16_t));//16 bits
+		fATrigIn.read((char*)&fATrigchannel, sizeof(int16_t));//16 bits
+		fATrigIn.read((char*)&fATrigtimestamp, sizeof(int64_t)); //pico seconds //64 bits
+		fATrigIn.read((char*)&fATrigenergy, sizeof(int16_t));//16 bits
+		fATrigIn.read((char*)&fATrigshortEnergy, sizeof(int16_t));//16 bits
+		fATrigIn.read((char*)&fATrigflags, sizeof(int32_t)); //32 bits
+		fATrigIn.read((char*)&fATrignumOfWaveSamplesToBeRead, sizeof(int16_t)); //16 bits
+		fATrigIn.read((char*)&Asample, sizeof(int16_t)); //16 bits
 
 	
 		
@@ -737,7 +747,7 @@ void ATrigreadBinaryWave(){
 		
 		else { fATrigPSP = (fATrigenergy - fATrigshortEnergy) / ((double)fATrigenergy *1.0); }
 		//else { fATrigPSP = 1-(fATrigshortEnergy/(double)fATrigenergy); }
-/*	
+/*
 		cout << "_________________TriggerA______________" << endl;
 		cout << "This is for the first event of the file" << endl;
 		cout << "board: " << fATrigboard << endl;
@@ -752,9 +762,9 @@ void ATrigreadBinaryWave(){
 		cout << "T290: " << fROItimestamp / 1000 << endl;
 		cout << "fATrigNumofRead: " << fATrigNumofRead << endl;
 		cout << "_________________________________________" << endl;
-*/
-		//fgetc(stdin); //pause sign
-		
+
+		fgetc(stdin); //pause sign
+	*/
 
 		double TIMEDIV = ((fROItimestamp*1.0) - (fATrigtimestamp*1.0) ) / (1000.0) ;
 		
@@ -793,29 +803,77 @@ void ATrigreadBinaryWave(){
 				fATrigNumofRead++;
 				//break;
 			}
-			*/
-		// if ((fATrigPSP > (g1d[fATrigenergy-1]/1000)) && (fATrigPSP < (g1u[fATrigenergy-1]/1000)) )  {
-		
-		if ((fATrigPSP > 0.26) && (fATrigPSP < 0.5))  {
+		*/
 
-			if ((TIMEDIV<=320)&&(TIMEDIV>=-320)){
+	
+		if ((TIMEDIV<=320)&&(TIMEDIV>=-320)){
+			if ((fATrigPSP > 0.26) && (fATrigPSP < 0.5)) {
 				AAneutron = true;
 				BTrigreadBinaryWave();
+				//WriteTo290File();//
+			}
+			fATrigNumofRead++;
+			break;
+		}
+		if (TIMEDIV<-320){
+			BTrigreadBinaryWave();
+			//WriteTo290File();//
+			break;
+		}
+		if (TIMEDIV>320){
+			fATrigNumofRead++;
+		}
+		else {
+			cout << "WRONG"<< endl;
+			fgetc(stdin);
+			BTrigreadBinaryWave();
+			fATrigNumofRead++;
+			//break;
+		}
+
+		//cout <<fATrigNumofRead <<" .  Check potint 0 . "<<fATrigtimestamp<<" ROI:  " <<fROItimestamp<<" ROIPSP: "<< fROIPSP <<endl;
+		// if ((fATrigPSP > (g1d[fATrigenergy-1]/1000)) && (fATrigPSP < (g1u[fATrigenergy-1]/1000)) )  {
+		/*
+			if ((fROItimestamp>670447087462005)&&(fROItimestamp<720531460747404)){
+				cout << "Check potint 0 . "<<fATrigtimestamp<<" ROI:  " <<fROItimestamp<<" ROIPSP: "<< fROIPSP <<endl;
+			}
+			if ((fATrigPSP > 0.26) && (fATrigPSP < 0.5))  {
+					if((fATrigtimestamp > 670000000000000)&& (fATrigtimestamp<720000000000000)&&(fROItimestamp>670447087462005)){
+						cout << "Check potint 1 . "<<fATrigtimestamp<<" ROI:  " <<fROItimestamp<< endl;
+						fgetc(stdin); //pause sign
+					}
+			if ((TIMEDIV<=320)&&(TIMEDIV>=-320)){
+				AAneutron = true;
+				if((fATrigtimestamp > 670000000000000)&& (fATrigtimestamp<720000000000000)&&(fROItimestamp>670451250532000)){
+					cout << "Check potint 2 "<<fATrigtimestamp<<" ROI:  " <<fROItimestamp<<  endl;
+					cout  <<  ((fROItimestamp*1.0) - (fATrigtimestamp*1.0 )) / 1000.0 <<" "<< fROIPSP <<" " << fROIenergy<<  endl;
+					fgetc(stdin); //pause sign
+				}
+
+				//BTrigreadBinaryWave();
+				
 				fATrigNumofRead++;
 
 				break;
 				}
 
 			if (TIMEDIV<-320){
-				BTrigreadBinaryWave();
+				//BTrigreadBinaryWave();
 				//fATrigNumofRead++;
+				if((fATrigtimestamp > 670000000000000)&& (fATrigtimestamp<720000000000000)&&(fROItimestamp>670451250532000)){
+					cout << "Check potint 3"<<fATrigtimestamp<< " ROI:  " <<fROItimestamp<< endl;
+					fgetc(stdin); //pause sign
+				}
 				break;
 				}
 
 			if (TIMEDIV>320){
 				//BTrigreadBinaryWave();
 				fATrigNumofRead++;
-
+				if((fATrigtimestamp > 670000000000000)&& (fATrigtimestamp<720000000000000)&&(fROItimestamp>670451250532000)){
+					cout << "Check potint 4"<<fATrigtimestamp<<" ROI:  " <<fROItimestamp<<  endl;
+					fgetc(stdin); //pause sign
+				}
 				}
 			else {
 				cout << "WRONG"<< endl;
@@ -824,13 +882,24 @@ void ATrigreadBinaryWave(){
 				fATrigNumofRead++;
 				//break;
 			}
+				if((fATrigtimestamp > 670000000000000)&& (fATrigtimestamp<720000000000000)&&(fROItimestamp>670451250532000)){
+					cout << "Check potint 6 "<<fATrigtimestamp<<" ROI:  " <<fROItimestamp<<  endl;
+					cout  <<  ((fROItimestamp*1.0) - (fATrigtimestamp*1.0 )) / 1000.0 <<" "<< fROIPSP <<" " << fROIenergy<<  endl;
+					fgetc(stdin); //pause sign
+				}
 		}
-		
+
+	*/	
+
+
+		/*
 		else{
 			//BTrigreadBinaryWave();
 			fATrigNumofRead++;
 			//break;
 		}
+		*/
+		//cout<< "fATrigNumofRead "<<fATrigNumofRead<<endl;
 		//cout << "Check potint 5"<< endl;
 		//fgetc(stdin); //pause sign
 		/*
@@ -925,10 +994,6 @@ void ATrigreadBinaryWave(){
 		*/
 	}
 
-	
-
-	//cout << " out of reading A "<<endl;
-	//fgetc(stdin);
 	return;
 }
 
@@ -955,7 +1020,7 @@ void BTrigcloseFile(){
 void BTrigreadBinaryWave(){
 
 	fBTrigcurrentWave.clear();
-	int64_t positionB = numberOfBytesOfEvent* fBTrigNumofRead;
+	int64_t positionB = TrignumberOfBytesOfEvent* fBTrigNumofRead;
 	fBTrigIn.seekg(positionB, ios::beg);
 
 	while (1){
@@ -1018,10 +1083,37 @@ void BTrigreadBinaryWave(){
 		//if (fBTrigPSP > 0)    {
 			
 		//if ((fBTrigPSP > (g2d[fATrigenergy-1]/1000)) && (fBTrigPSP < (g2u[fATrigenergy-1]/1000)) )  {
+		if ((TIMEDIV<=320)&&(TIMEDIV>=-320)){
+			if ((fBTrigPSP > 0.26) && (fBTrigPSP < 0.5)) {
+				BBneutron = true;
+			}
+			WriteTo290File();
+			fBTrigNumofRead++;
+			break;
+		}
+		if (TIMEDIV<-320){
+			WriteTo290File();
+			break;
+		}
+		if (TIMEDIV>320){
+			fBTrigNumofRead++;
+		}
+		else {
+			cout << "WRONG"<< endl;
+			fgetc(stdin);
+			WriteTo290File();
+			fBTrigNumofRead++;
+			//break;
+		}
+
+/*
 		if ((fBTrigPSP > 0.3) && (fBTrigPSP < 0.5)) {
 			if ((TIMEDIV<=320)&&(TIMEDIV>=-320)){
-				BBneutron = true;
-				WriteTo290File();
+
+
+					BBneutron = true;
+					WriteTo290File();
+
 				fBTrigNumofRead++;
 
 				break;				
@@ -1039,12 +1131,14 @@ void BTrigreadBinaryWave(){
 				//break;
 			}
 		}
+*/
+/*
 		else{
 			//BTrigreadBinaryWave();
 			fBTrigNumofRead++;
 			//break;
 		}
-		
+*/
 		/*
 		if (TIMEDIV<-400){
 			WriteTo290File();
@@ -1169,9 +1263,11 @@ void WriteTo290File(){
 }
 
 
-/*
-void WriteTo309File(){
 
+void WriteTo309File(){
+	ROIoutFile  <<  fROItimestamp<<" "<< fROIPSP <<" " << fROIenergy  << endl;
+	
+	/*
 	if ((AAneutron == true)&&(BBneutron==false)){
 		BROIoutFile << fROIenergy << "," << ((fROItimestamp - fATrigtimestamp )) / 1000 << endl;
 
@@ -1179,7 +1275,6 @@ void WriteTo309File(){
 	if ((AAneutron == false)&&(BBneutron==true)){
 		BROIoutFile << fROIenergy << "," <<  ((fROItimestamp - fBTrigtimestamp )) / 1000 << endl;
 	}
-	
+	*/
 
 }
-*/
